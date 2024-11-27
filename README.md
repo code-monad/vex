@@ -17,15 +17,13 @@ A flexible and extensible framework for processing CKB transaction events(enrich
 
 ## Architecture
 
+```mermaid
 graph LR
-    A[MQTT Source\n(Appraisal)] --> B[Vex Service]
-    B --> C[Filter Registry]
-    C --> |Match| D[Processor Registry]
-    C --> |No Match| E[Skip]
-    D --> F[Custom Processors]
-    F --> |DAO| G[DAO Logic]
-    F --> |NFT| H[NFT Logic]
-    F --> |Custom| I[Other Logic]
+    A[MQTT Source\(Appraisal\)] --> B[Vex]
+    B --> C[Filter System]
+    C --> D[Processor System]
+    D --> E[Custom Processing Logic]
+```
 
 ## Prerequisites
 
