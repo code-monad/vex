@@ -16,7 +16,7 @@ async function initializeDatabase() {
         await GenericTransactionModel.createIndexes();
         logger.info("Created indexes for GenericTransaction collection");
 
-        // More initialization logic can be add here
+        // NOTE: More initialization logic can be add here
         // For example, creating initial data or other collections
 
         logger.info("Database initialized successfully");

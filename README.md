@@ -11,6 +11,7 @@ A flexible and extensible framework for processing CKB transaction events(enrich
 - **Plugin Architecture**: Easy-to-extend filter and processor system
 - **Configurable Rules**: YAML-based configuration for transaction filtering
 - **MQTT Integration**: Subscribe to transaction events from CKB nodes
+- **Mongodb Integration**: ORM support for Mongo and less pain for serialize data to db
 - **Type Safety**: Full TypeScript support with strict typing
 - **Error Handling**: Comprehensive error handling with retries
 - **Logging**: Detailed logging with Winston
