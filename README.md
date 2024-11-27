@@ -23,17 +23,17 @@ graph LR
     B -->|TX Events| C{Filter System}
     subgraph Filters
         C -->|Match| D[CodeHash Filter]
-        C -->|Match| E[Anyway Filter]
-        C -->|Match| F[Custom Filters...]
+        C -->|Match| E[Spore Filter]
+        C -->|Match| F[Anyway Filter]
+        C -->|Match| G[Custom Filters...]
     end
     subgraph Processors
-        D --> G[DAO Processor]
-        E --> H[Anyway Processor]
-        F --> I[Custom Processors...]
+        H --> M[Spore Processor]
+        I --> N[DelegateLock Processor]
+        J --> O[DAO Processor]
+        K --> P[Anyway Processor]
+        L --> Q[Custom Processors...]
     end
-    G --> J[Processing Results]
-    H --> J
-    I --> J
 ```
 
 ## Prerequisites
