@@ -19,7 +19,7 @@ A flexible and extensible framework for processing CKB transaction events(enrich
 
 ```mermaid
 graph LR
-    A[MQTT Source\nAppraisal Service] -->|Enriched TX| B[Vex Service]
+    A["MQTT Source(Appraisal)"] -->|Enriched TX| B[Vex Service]
     B -->|TX Events| C{Filter System}
     subgraph Filters
         C -->|Match| D[CodeHash Filter]
