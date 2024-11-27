@@ -19,10 +19,21 @@ A flexible and extensible framework for processing CKB transaction events(enrich
 
 ```mermaid
 graph LR
-    A[MQTT Source\(Appraisal\)] --> B[Vex]
-    B --> C[Filter System]
-    C --> D[Processor System]
-    D --> E[Custom Processing Logic]
+    A[MQTT Source\nAppraisal Service] -->|Enriched TX| B[Vex Service]
+    B -->|TX Events| C{Filter System}
+    subgraph Filters
+        C -->|Match| D[CodeHash Filter]
+        C -->|Match| E[Anyway Filter]
+        C -->|Match| F[Custom Filters...]
+    end
+    subgraph Processors
+        D --> G[DAO Processor]
+        E --> H[Anyway Processor]
+        F --> I[Custom Processors...]
+    end
+    G --> J[Processing Results]
+    H --> J
+    I --> J
 ```
 
 ## Prerequisites
