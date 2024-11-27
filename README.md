@@ -28,11 +28,11 @@ graph LR
         C -->|Match| G[Custom Filters...]
     end
     subgraph Processors
-        H --> M[Spore Processor]
-        I --> N[DelegateLock Processor]
-        J --> O[DAO Processor]
-        K --> P[Anyway Processor]
-        L --> Q[Custom Processors...]
+        E --> M[Spore Processor]
+        D --> N[DelegateLock Processor]
+        D --> O[DAO Processor]
+        F --> P[Anyway Processor]
+        G --> Q[Custom Processors...]
     end
 ```
 
