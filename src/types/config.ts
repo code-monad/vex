@@ -1,3 +1,5 @@
+import { ConnectOptions } from "mongoose";
+
 export interface MQTTConfig {
     host: string;
     port: number;
@@ -35,8 +37,14 @@ export interface RetryConfig {
     maxDelay: number;
 }
 
+export interface MongoDBConfig {
+    uri: string;
+    options: ConnectOptions;
+}
+
 export interface AppConfig {
     mqtt: MQTTConfig;
     filters: FilterConfig[];
     retry: RetryConfig;
+    mongodb: MongoDBConfig;
 }

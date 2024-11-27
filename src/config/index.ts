@@ -5,5 +5,6 @@ export function getConfig(): AppConfig {
         mqtt: config.get("mqtt"),
         filters: config.get("filters"),
         retry: config.get("retry"),
+        mongodb: config.get("mongodb"),
     };
 }
