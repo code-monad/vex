@@ -1,7 +1,7 @@
-import { BaseProcessor } from '../core/processor';
-import { Transaction } from '../types/transaction';
-import { Logger } from '../utils/logger';
-import { GenericDatabaseOps } from './anyway/anyway-db';
+import { BaseProcessor } from '../../core/processor';
+import { Transaction } from '../../types/transaction';
+import { Logger } from '../../utils/logger';
+import { GenericDatabaseOps } from './anyway-db';
 
 export class AnywayProcessor extends BaseProcessor {
   constructor(

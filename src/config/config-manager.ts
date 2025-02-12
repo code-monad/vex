@@ -6,8 +6,10 @@ import { NetworkType, resolveNetworkType } from '../utils/network';
 
 export interface FilterConfig {
   name: string;
-  filter: string;
+  filter: 'codeHash' | 'spore' | 'cluster' | 'anyway';  // restrict filter types
   processor: string;
+  codeHash?: string;  // optional for non-codeHash filters
+  hashType?: string;  // optional for non-codeHash filters
   [key: string]: any;
 }
 

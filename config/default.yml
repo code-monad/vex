@@ -1,5 +1,5 @@
 mqtt:
-  host: "localhost"
+  host: "192.168.10.13"
   port: 1883
   clientId: "vex-processor"
   topic: "ckb.transactions.detailed.proposed"
@@ -7,17 +7,29 @@ mqtt:
   qos: 1
 
 filters:
+  # Nervos DAO tracking
   - name: "dao-tracker"
     filter: "codeHash"
     codeHash: "0x82d76d1b75fe2fd9a27dfbaa65a039221a380d76c926f378d3f81cf3e7e13f2e"
     processor: "dao"
 
-  - name: "all-transactions"
+  # Spore Protocol tracking (handles all versions)
+  - name: "spore-tracker"
+    filter: "spore"
+    processor: "spore"
+
+  # Cluster Protocol tracking (handles all versions)
+  - name: "cluster-tracker"
+    filter: "cluster"
+    processor: "cluster"
+
+  # Catch-all filter for debugging
+  - name: "debug-all"
     filter: "anyway"
     processor: "anyway"
 
 mongodb:
-  uri: "mongodb://vex:password@localhost:27017/vex?authSource=admin"
+  uri: "mongodb://vex:password@192.168.10.13:27017/vex?authSource=admin"
   options:
       socketTimeoutMS: 30000
       connectTimeoutMS: 30000

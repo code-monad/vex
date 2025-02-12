@@ -43,7 +43,7 @@ export class DAODatabaseOps implements DatabaseOperation<DAOTransaction> {
     // Implementation specific to DAO transaction analysis
     // This is just an example
     const isDeposit = tx.outputs.some(output => 
-      output.type?.codeHash === '0x82d76d1b75fe2fd9a27dfbaa65a039221a380d76c926f378d3f81cf3e7e13f2e'
+      output.type?.code_hash === '0x82d76d1b75fe2fd9a27dfbaa65a039221a380d76c926f378d3f81cf3e7e13f2e'
     );
 
     return {

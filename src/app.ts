@@ -23,7 +23,7 @@ export class App {
     this.database = new DatabaseService(config.mongodbConfig, logger, errorHandler);
     this.pipeline = new Pipeline(errorHandler, logger);
     this.mqtt = new MqttClient(config.mqttConfig, errorHandler, logger);
-    this.filterRegistry = new FilterRegistry();
+    this.filterRegistry = new FilterRegistry(config, this.logger); // Pass ConfigManager to FilterRegistry
     this.processorRegistry = new ProcessorRegistry(logger, config);
 
     this.setupEventHandlers();
@@ -40,15 +40,23 @@ export class App {
   private registerFiltersAndProcessors(): void {
     const configs = this.config.filterConfigs;
     
+    this.logger.debug('Loading filters and processors:');
     for (const config of configs) {
+      this.logger.debug(`Creating filter: ${config.name} (type: ${config.filter})`);
       const filter = this.filterRegistry.create(config);
+      
+      this.logger.debug(`Creating processor: ${config.processor}`);
       const processor = this.processorRegistry.create(config.processor);
       
       if (filter && processor) {
+        this.logger.debug(`Registered filter: ${config.name} -> processor: ${config.processor}`);
         this.pipeline.registerFilter(filter);
         this.pipeline.registerProcessor(processor);
+      } else {
+        this.logger.warn(`Failed to create filter/processor pair: ${config.name} -> ${config.processor}`);
       }
     }
+    this.logger.debug('Finished loading filters and processors');
   }
 
   async start(): Promise<void> {

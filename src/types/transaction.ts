@@ -1,38 +1,57 @@
 export interface Script {
-  codeHash: string;
-  hashType: 'type' | 'data';
-  args: string;
+    code_hash: string;
+    hash_type: string;
+    args: string;
 }
 
 export interface Cell {
-  capacity: string;
-  lock: Script;
-  type?: Script | null;
+    capacity: string;
+    lock: Script;
+    type?: Script | null;
 }
 
 export interface CellDep {
-  depType: 'code' | 'dep_group';
-  outPoint: {
-    txHash: string;
-    index: string;
-  };
+    dep_type: 'code' | 'dep_group';
+    out_point: {
+        tx_hash: string;
+        index: string;
+    };
 }
 
 export interface Input extends Cell {
-  previousOutput: {
-    txHash: string;
-    index: string;
-  };
-  since: string;
+    previous_output: {
+        tx_hash: string;
+        index: string;
+    };
+    since: string;
 }
 
 export interface Transaction {
-  hash: string;
-  inputs: Input[];
-  outputs: Cell[];
-  outputsData: string[];
-  cellDeps: CellDep[];
-  headerDeps: string[];
-  version: string;
-  witnesses: string[];
+    hash: string;
+    cell_deps: {
+        dep_type: string;
+        out_point: {
+            index: string;
+            tx_hash: string;
+        };
+    }[];
+    header_deps: string[];
+    inputs: {
+        previous_output: {
+            index: string;
+            tx_hash: string;
+        };
+        since: string;
+        capacity?: string;
+        lock?: Script;
+        type?: Script;
+    }[];
+    outputs: {
+        capacity: string;
+        lock: Script;
+        type: Script | null;
+    }[];
+    outputs_data: string[];
+    version: string;
+    witnesses: string[];
 }

@@ -1,27 +1,33 @@
 import { Filter } from '../core/filter';
-import { FilterConfig } from '../config/config-manager';
+import { FilterConfig, ConfigManager } from '../config/config-manager';
 import { CodeHashFilter } from './codehash';
 import { AnywayFilter } from './anyway';
+import { SporeFilter, ClusterFilter } from './spore';
+import { Logger } from '../utils/logger';
 
 export class FilterRegistry {
-  private factories: Map<string, (config: FilterConfig) => Filter>;
-
-  constructor() {
-    this.factories = new Map();
-    this.registerDefaultFilters();
-  }
-
-  private registerDefaultFilters(): void {
-    this.factories.set('codeHash', (config) => new CodeHashFilter(config));
-    this.factories.set('anyway', (config) => new AnywayFilter(config));
-  }
-
-  register(type: string, factory: (config: FilterConfig) => Filter): void {
-    this.factories.set(type, factory);
-  }
+  constructor(
+    private configManager: ConfigManager,
+    private logger: Logger
+  ) {}
 
   create(config: FilterConfig): Filter | null {
-    const factory = this.factories.get(config.filter);
-    return factory ? factory(config) : null;
+    try {
+      switch (config.filter) {
+        case 'codeHash':
+          return new CodeHashFilter(config, this.logger);
+        case 'anyway':
+          return new AnywayFilter(config, this.logger);
+        case 'spore':
+          return new SporeFilter(config, this.configManager.networkType, this.logger);
+        case 'cluster':
+          return new ClusterFilter(config, this.configManager.networkType, this.logger);
+        default:
+          return null;
+      }
+    } catch (error) {
+      this.logger.error(`Failed to create filter ${config.name}:`, error);
+      return null;
+    }
   }
 }

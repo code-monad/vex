@@ -1,22 +1,37 @@
 import { BaseFilter } from '../core/filter';
-import { Transaction } from '../types/transaction';
 import { FilterConfig } from '../config/config-manager';
+import { Transaction } from '../types/transaction';
+import { Logger } from '../utils/logger';
 
 export class CodeHashFilter extends BaseFilter {
-  private codeHash: string;
+    private readonly codeHash: string;
+    private readonly hashType?: string;
 
-  constructor(config: FilterConfig) {
-    super(config.name, config.processor);
-    this.codeHash = config.codeHash;
-  }
+    constructor(config: FilterConfig, logger: Logger) {
+        if (!config.codeHash) {
+            throw new Error('CodeHash filter requires a codeHash parameter');
+        }
+        
+        super(config.name, config.processor, logger);
+        this.codeHash = config.codeHash;
+        this.hashType = config.hashType;
+    }
 
-  matches(tx: Transaction): boolean {
-    return tx.inputs.some(input => 
-      input.lock.codeHash === this.codeHash ||
-      (input.type?.codeHash === this.codeHash)
-    ) || tx.outputs.some(output =>
-      output.lock.codeHash === this.codeHash ||
-      (output.type?.codeHash === this.codeHash)
-    );
-  }
+    matches(tx: Transaction): boolean {
+        // Check inputs
+        const hasMatchingInputs = tx.inputs.some(input => {
+            if (!input.type) return false;
+            const typeMatches = input.type.code_hash === this.codeHash;
+            return this.hashType ? typeMatches && input.type.hash_type === this.hashType : typeMatches;
+        });
+
+        // Check outputs
+        const hasMatchingOutputs = tx.outputs.some(output => {
+            if (!output.type) return false;
+            const typeMatches = output.type.code_hash === this.codeHash;
+            return this.hashType ? typeMatches && output.type.hash_type === this.hashType : typeMatches;
+        });
+
+        return hasMatchingInputs || hasMatchingOutputs;
+    }
 }
