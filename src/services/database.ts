@@ -1,38 +1,39 @@
-import mongoose from "mongoose";
-import { MongoDBConfig } from "../types/config";
-import logger from "../utils/logger";
+import mongoose from 'mongoose';
+import { Logger } from '../utils/logger';
+import { ErrorHandler } from '../utils/error';
+
+export interface DatabaseConfig {
+  uri: string;
+  options: mongoose.ConnectOptions;
+}
 
 export class DatabaseService {
-    private static instance: DatabaseService;
-    private isConnected = false;
+  constructor(
+    private config: DatabaseConfig,
+    private logger: Logger,
+    private errorHandler: ErrorHandler
+  ) {}
 
-    private constructor() {}
+  async connect(): Promise<void> {
+    try {
+      await mongoose.connect(this.config.uri, this.config.options);
+      this.logger.info('Connected to MongoDB');
 
-    static getInstance(): DatabaseService {
-        if (!DatabaseService.instance) {
-            DatabaseService.instance = new DatabaseService();
-        }
-        return DatabaseService.instance;
+      mongoose.connection.on('error', (error) => {
+        this.errorHandler.handle(error, 'MongoDB connection error');
+      });
+
+      mongoose.connection.on('disconnected', () => {
+        this.logger.warn('MongoDB disconnected');
+      });
+    } catch (error) {
+      this.errorHandler.handle(error instanceof Error ? error : new Error(String(error)), 'MongoDB connection failed');
+      throw error;
     }
+  }
 
-    async connect(config: MongoDBConfig): Promise<void> {
-        try {
-            if (!this.isConnected) {
-                await mongoose.connect(config.uri, config.options);
-                this.isConnected = true;
-                logger.info("Connected to MongoDB");
-            }
-        } catch (error) {
-            logger.error("MongoDB connection error:", error);
-            throw error;
-        }
-    }
-
-    async disconnect(): Promise<void> {
-        if (this.isConnected) {
-            await mongoose.disconnect();
-            this.isConnected = false;
-            logger.info("Disconnected from MongoDB");
-        }
-    }
+  async disconnect(): Promise<void> {
+    await mongoose.disconnect();
+    this.logger.info('Disconnected from MongoDB');
+  }
 }

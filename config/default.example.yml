@@ -1,0 +1,31 @@
+mqtt:
+  host: "localhost"
+  port: 1883
+  clientId: "vex-processor"
+  topic: "ckb.transactions.detailed.proposed"
+  reconnectPeriod: 1000
+  qos: 1
+
+filters:
+  - name: "dao-tracker"
+    filter: "codeHash"
+    codeHash: "0x82d76d1b75fe2fd9a27dfbaa65a039221a380d76c926f378d3f81cf3e7e13f2e"
+    processor: "dao"
+
+  - name: "all-transactions"
+    filter: "anyway"
+    processor: "anyway"
+
+mongodb:
+  uri: "mongodb://vex:password@localhost:27017/vex?authSource=admin"
+  options:
+      socketTimeoutMS: 30000
+      connectTimeoutMS: 30000
+      serverSelectionTimeoutMS: 5000
+
+retry:
+  maxAttempts: 3
+  initialDelay: 1000
+  maxDelay: 5000
+
+network: "testnet"  # can be: main/mainnet/mirana or test/testnet/pudge/meepo

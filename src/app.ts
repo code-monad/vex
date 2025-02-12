@@ -1,53 +1,73 @@
-import { MQTTService } from "./services/mqtt";
-import { ProcessorManager } from "./services/manager";
-import { Transaction } from "./types/transaction";
-import { AppConfig } from "./types/config";
-import logger from "./utils/logger";
-import mongoose from "mongoose";
-import { getConfig } from "./config";
-import { DatabaseService } from "./services/database";
+import { MqttClient } from './services/mqtt';
+import { Pipeline } from './core/pipeline';
+import { ConfigManager } from './config/config-manager';
+import { ErrorHandler } from './utils/error';
+import { Logger } from './utils/logger';
+import { FilterRegistry } from './filters/registry';
+import { ProcessorRegistry } from './processors/registry';
+import { Transaction } from './types/transaction';
+import { DatabaseService } from './services/database';
 
 export class App {
-    private mqttService: MQTTService;
-    private processorManager: ProcessorManager;
-    private dbService: DatabaseService;
+  private mqtt: MqttClient;
+  private pipeline: Pipeline;
+  private filterRegistry: FilterRegistry;
+  private processorRegistry: ProcessorRegistry;
+  private database: DatabaseService;
 
-    constructor(private config: AppConfig) {
-        this.mqttService = new MQTTService(config.mqtt);
-        this.processorManager = new ProcessorManager(config.filters);
-        this.dbService = DatabaseService.getInstance();
+  constructor(
+    private config: ConfigManager,
+    private logger: Logger,
+    private errorHandler: ErrorHandler
+  ) {
+    this.database = new DatabaseService(config.mongodbConfig, logger, errorHandler);
+    this.pipeline = new Pipeline(errorHandler, logger);
+    this.mqtt = new MqttClient(config.mqttConfig, errorHandler, logger);
+    this.filterRegistry = new FilterRegistry();
+    this.processorRegistry = new ProcessorRegistry(logger, config);
+
+    this.setupEventHandlers();
+    this.registerFiltersAndProcessors();
+  }
+
+  private setupEventHandlers(): void {
+    this.mqtt.on('transaction', async (tx: Transaction) => {
+      this.logger.debug(`Received transaction for processing: ${tx.hash}`);
+      await this.pipeline.process(tx);
+    });
+  }
+
+  private registerFiltersAndProcessors(): void {
+    const configs = this.config.filterConfigs;
+    
+    for (const config of configs) {
+      const filter = this.filterRegistry.create(config);
+      const processor = this.processorRegistry.create(config.processor);
+      
+      if (filter && processor) {
+        this.pipeline.registerFilter(filter);
+        this.pipeline.registerProcessor(processor);
+      }
     }
+  }
 
-    async start(): Promise<void> {
-        try {
-            // Connect to MongoDB
-            await mongoose.connect(this.config.mongodb.uri, {
-                ...this.config.mongodb.options,
-            });
-            logger.info("Connected to MongoDB");
-
-            // Set up MQTT message handler
-            this.mqttService.setMessageHandler(async (message: string) => {
-                try {
-                    const tx = JSON.parse(message) as Transaction;
-                    await this.processorManager.processTransaction(tx);
-                } catch (error) {
-                    logger.error("Error processing message:", error);
-                }
-            });
-
-            // Connect to MQTT broker
-            await this.mqttService.connect();
-            logger.info("Application started successfully");
-        } catch (error) {
-            logger.error("Failed to start application:", error);
-            throw error;
-        }
+  async start(): Promise<void> {
+    try {
+      await this.database.connect();
+      await this.mqtt.connect();
+      this.logger.info('Application started successfully');
+    } catch (error) {
+      this.errorHandler.handle(
+        error instanceof Error ? error : new Error(String(error)),
+        'Application startup failed'
+      );
+      throw error;
     }
+  }
 
-    async stop(): Promise<void> {
-        await this.mqttService.disconnect();
-        await mongoose.disconnect();
-        logger.info("Application stopped");
-    }
+  async stop(): Promise<void> {
+    await this.mqtt.disconnect();
+    await this.database.disconnect();
+    this.logger.info('Application stopped');
+  }
 }

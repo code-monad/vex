@@ -1,37 +1,42 @@
-import { BaseProcessor } from "./base";
-import { DAOProcessor } from "./implementations/dao";
-import { AnywayProcessor } from "./implementations/anyway";
-import logger from "../utils/logger";
+import { Processor } from '../core/processor';
+import { AnywayProcessor } from './anyway';
+import { DaoProcessor } from './dao/dao-processor';
+import { Logger } from '../utils/logger';
+import { ConfigManager } from '../config/config-manager';
+import { GenericDatabaseOps } from './anyway/anyway-db';
 
-class ProcessorRegistry {
-    private processors = new Map<string, new () => BaseProcessor>();
+export class ProcessorRegistry {
+  private processors: Map<string, Processor> = new Map();
 
-    register(ProcessorClass: new () => BaseProcessor): void {
-        // Create temporary instance to get the name
-        const tempInstance = new ProcessorClass();
-        this.processors.set(
-            tempInstance.getName().toLowerCase(),
-            ProcessorClass,
-        );
+  constructor(
+    private logger: Logger,
+    private configManager: ConfigManager
+  ) {
+    this.registerDefaultProcessors();
+  }
+
+  private registerDefaultProcessors(): void {
+    // Create processors with their database operations
+    const anywayProcessor = new AnywayProcessor(
+      this.logger, 
+      new GenericDatabaseOps(this.configManager)
+    );
+    const daoProcessor = new DaoProcessor(this.logger);
+
+    this.register(anywayProcessor);
+    this.register(daoProcessor);
+  }
+
+  register(processor: Processor): void {
+    this.processors.set(processor.name, processor);
+  }
+
+  create(name: string): Processor | null {
+    const processor = this.processors.get(name);
+    if (!processor) {
+      this.logger.warn(`Processor not found: ${name}`);
+      return null;
     }
-
-    get(name: string): BaseProcessor | null {
-        const ProcessorClass = this.processors.get(name.toLowerCase());
-        if (!ProcessorClass) {
-            logger.error(`Processor not found: ${name}`);
-            return null;
-        }
-        return new ProcessorClass();
-    }
-
-    getAvailableProcessors(): string[] {
-        return Array.from(this.processors.keys());
-    }
+    return processor;
+  }
 }
-
-// Create and initialize the registry
-export const processorRegistry = new ProcessorRegistry();
-
-// Register built-in processors
-processorRegistry.register(DAOProcessor);
-processorRegistry.register(AnywayProcessor);

@@ -1,3 +1,0 @@
-Please remember to add a repository to src/repositories that references the new entity. This is necessary for the entity to be managed by the ORM.
-
-By Code Monad(code@nervape.com)

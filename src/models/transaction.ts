@@ -1,25 +1,45 @@
-import { Schema, model, Document } from "mongoose";
+import mongoose from 'mongoose';
+import { Transaction } from '../types/transaction';
 
-export interface GenericTransaction extends Document {
-    txHash: string;
-    timestamp: Date;
-    capacity: string;
-    owner: string;
-}
-
-const genericTransactionSchema = new Schema<GenericTransaction>(
-    {
-        txHash: { type: String, required: true, unique: true, index: true },
-        timestamp: { type: Date, required: true },
-        capacity: { type: String, required: true },
-        owner: { type: String, required: true, index: true },
+const TransactionSchema = new mongoose.Schema({
+  hash: { type: String, required: true, unique: true, index: true },
+  inputs: [{
+    previousOutput: {
+      txHash: String,
+      index: String
     },
-    {
-        timestamps: true, // Adds createdAt and updatedAt fields
+    since: String,
+    capacity: String,
+    lock: {
+      args: String,
+      codeHash: String,
+      hashType: String
     },
-);
+    type: {
+      args: String,
+      codeHash: String,
+      hashType: String
+    }
+  }],
+  outputs: [{
+    capacity: String,
+    lock: {
+      args: String,
+      codeHash: String,
+      hashType: String
+    },
+    type: {
+      args: String,
+      codeHash: String,
+      hashType: String
+    }
+  }],
+  outputsData: [String],
+  version: String,
+  processedAt: { type: Date, default: Date.now },
+  processors: [String]
+}, {
+  timestamps: true
+});
 
-export const GenericTransactionModel = model<GenericTransaction>(
-    "GenericTransaction",
-    genericTransactionSchema,
-);
+export const TransactionModel = mongoose.model<Transaction & mongoose.Document>('Transaction', TransactionSchema);

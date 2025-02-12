@@ -1,50 +1,27 @@
-import { BaseFilter } from "./base";
-import { CodeHashFilter } from "./code_hash";
-import { AnywayFilter } from "./anyway";
-import {
-    FilterConfig,
-    CodeHashFilterConfig,
-    AnywayFilterConfig,
-} from "../types/config";
-import logger from "../utils/logger";
+import { Filter } from '../core/filter';
+import { FilterConfig } from '../config/config-manager';
+import { CodeHashFilter } from './codehash';
+import { AnywayFilter } from './anyway';
 
-type FilterConstructor<T extends FilterConfig> = new (
-    name: string,
-    config: T,
-) => BaseFilter;
+export class FilterRegistry {
+  private factories: Map<string, (config: FilterConfig) => Filter>;
 
-class FilterRegistry {
-    private filters = new Map<string, FilterConstructor<FilterConfig>>();
+  constructor() {
+    this.factories = new Map();
+    this.registerDefaultFilters();
+  }
 
-    register<T extends FilterConfig>(
-        type: T["filter"],
-        filterClass: FilterConstructor<T>,
-    ): void {
-        this.filters.set(type, filterClass as FilterConstructor<FilterConfig>);
-    }
+  private registerDefaultFilters(): void {
+    this.factories.set('codeHash', (config) => new CodeHashFilter(config));
+    this.factories.set('anyway', (config) => new AnywayFilter(config));
+  }
 
-    create(config: FilterConfig): BaseFilter | null {
-        const FilterClass = this.filters.get(config.filter);
-        if (!FilterClass) {
-            logger.error(`Filter type not found: ${config.filter}`);
-            return null;
-        }
-        try {
-            return new FilterClass(config.name, config);
-        } catch (error) {
-            logger.error(`Failed to create filter ${config.filter}:`, error);
-            return null;
-        }
-    }
+  register(type: string, factory: (config: FilterConfig) => Filter): void {
+    this.factories.set(type, factory);
+  }
 
-    getAvailableFilters(): string[] {
-        return Array.from(this.filters.keys());
-    }
+  create(config: FilterConfig): Filter | null {
+    const factory = this.factories.get(config.filter);
+    return factory ? factory(config) : null;
+  }
 }
-
-// Create and initialize the registry
-export const filterRegistry = new FilterRegistry();
-
-// Register built-in filters
-filterRegistry.register<CodeHashFilterConfig>("codeHash", CodeHashFilter);
-filterRegistry.register<AnywayFilterConfig>("anyway", AnywayFilter);

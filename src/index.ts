@@ -1,30 +1,36 @@
-import { getConfig } from "./config";
-import { App } from "./app";
-import { AppConfig } from "./types/config";
-import logger from "./utils/logger";
+import { App } from './app';
+import { ConfigManager } from './config/config-manager';
+import { Logger } from './utils/logger';
+import { ErrorHandler } from './utils/error';
 
 async function main() {
-    try {
-        const appConfig = getConfig();
-        const app = new App(appConfig);
+  const logger = new Logger();
+  const errorHandler = new ErrorHandler(logger);
+  const configManager = new ConfigManager('./config/default.yml');
 
-        process.on("SIGINT", async () => {
-            logger.info("Received SIGINT. Gracefully shutting down...");
-            await app.stop();
-            process.exit(0);
-        });
+  const app = new App(configManager, logger, errorHandler);
 
-        process.on("SIGTERM", async () => {
-            logger.info("Received SIGTERM. Gracefully shutting down...");
-            await app.stop();
-            process.exit(0);
-        });
+  process.on('SIGINT', async () => {
+    await app.stop();
+    process.exit(0);
+  });
 
-        await app.start();
-    } catch (error) {
-        logger.error("Fatal error:", error);
-        process.exit(1);
-    }
+  process.on('SIGTERM', async () => {
+    await app.stop();
+    process.exit(0);
+  });
+
+  process.on('unhandledRejection', (reason: unknown) => {
+    const error = reason instanceof Error ? reason : new Error(typeof reason === 'string' ? reason : JSON.stringify(reason));
+    errorHandler.handle(error, 'Unhandled Promise rejection');
+  });
+
+  try {
+    await app.start();
+  } catch (error) {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  }
 }
 
 main();
