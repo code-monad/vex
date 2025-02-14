@@ -5,6 +5,7 @@ import { SporeData, unpackSporeData } from '../../types/spore';
 import { SporeOperation, SporeEvent } from './types';
 import { SPORE_CONSTANTS } from '../../constants/spore';
 import { ConfigManager } from '../../config/config-manager';
+import { scriptToAddress } from '../../utils/script';
 
 export interface SporeDocument extends Document, Omit<SporeEvent, keyof Document> {}
 
@@ -35,7 +36,7 @@ export class SporeDatabaseOps implements DatabaseOperation<SporeDocument> {
             if (input.type && this.isSporeType(input.type)) {
                 const sporeId = input.type.args;
                 inputSpores.set(sporeId, {
-                    address: input.lock!.args,
+                    address: scriptToAddress(input.lock!, this.configManager.networkType),
                     data: unpackSporeData(tx.outputs_data[index])
                 });
             }
@@ -46,7 +47,7 @@ export class SporeDatabaseOps implements DatabaseOperation<SporeDocument> {
             if (output.type && this.isSporeType(output.type)) {
                 const sporeId = output.type.args;
                 outputSpores.set(sporeId, {
-                    address: output.lock.args,
+                    address: scriptToAddress(output.lock, this.configManager.networkType),
                     data: unpackSporeData(tx.outputs_data[index])
                 });
             }

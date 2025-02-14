@@ -5,6 +5,7 @@ import { ClusterData, unpackClusterData } from '../../types/spore';
 import { ClusterOperation, ClusterEvent } from './types';
 import { SPORE_CONSTANTS } from '../../constants/spore';
 import { ConfigManager } from '../../config/config-manager';
+import { scriptToAddress } from '../../utils/script';
 
 export interface ClusterDocument extends Document, Omit<ClusterEvent, keyof Document> {}
 
@@ -33,7 +34,7 @@ export class ClusterDatabaseOps implements DatabaseOperation<ClusterDocument> {
             if (input.type && this.isClusterType(input.type)) {
                 const clusterId = input.type.args;
                 inputClusters.set(clusterId, {
-                    address: input.lock!.args,
+                    address: scriptToAddress(input.lock!, this.configManager.networkType),
                     data: unpackClusterData(tx.outputs_data[index])
                 });
             }
@@ -44,7 +45,7 @@ export class ClusterDatabaseOps implements DatabaseOperation<ClusterDocument> {
             if (output.type && this.isClusterType(output.type)) {
                 const clusterId = output.type.args;
                 outputClusters.set(clusterId, {
-                    address: output.lock.args,
+                    address: scriptToAddress(output.lock, this.configManager.networkType),
                     data: unpackClusterData(tx.outputs_data[index])
                 });
             }

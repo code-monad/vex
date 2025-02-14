@@ -2,8 +2,8 @@ import { DatabaseOperation } from '../../types/database';
 import { Transaction } from '../../types/transaction';
 import { Schema, model, Document } from "mongoose";
 import { Script } from '@ckb-ccc/core';
-import { Address, AddressType } from '../../utils/address';
 import { ConfigManager } from '../../config/config-manager';
+import { scriptToAddress, normalizeScript, CKBScript } from '../../utils/script';
 
 interface TransactionParty {
     address: string;
@@ -66,26 +66,26 @@ export class GenericDatabaseOps implements DatabaseOperation<GenericTransaction>
         }
 
         const inputs = tx.inputs.map(input => {
-            const lock = this.normalizeScript(input.lock);
-            const type = input.type ? this.normalizeScript(input.type) : undefined;
+            const lock = normalizeScript(input.lock!);
+            const type = input.type ? normalizeScript(input.type) : undefined;
             
             return {
-                address: this.scriptToAddress(lock),
+                address: scriptToAddress(lock, this.configManager.networkType),
                 capacity: input.capacity,
-                lockHash: this.computeLockHash(lock),
-                typeHash: type ? this.computeLockHash(type) : undefined
+                lockHash: this.computeScriptHash(lock),
+                typeHash: type ? this.computeScriptHash(type) : undefined
             };
         });
 
         const outputs = tx.outputs.map(output => {
-            const lock = this.normalizeScript(output.lock);
-            const type = output.type ? this.normalizeScript(output.type) : undefined;
+            const lock = normalizeScript(output.lock);
+            const type = output.type ? normalizeScript(output.type) : undefined;
             
             return {
-                address: this.scriptToAddress(lock),
+                address: scriptToAddress(lock, this.configManager.networkType),
                 capacity: output.capacity,
-                lockHash: this.computeLockHash(lock),
-                typeHash: type ? this.computeLockHash(type) : undefined
+                lockHash: this.computeScriptHash(lock),
+                typeHash: type ? this.computeScriptHash(type) : undefined
             };
         });
 
@@ -119,25 +119,6 @@ export class GenericDatabaseOps implements DatabaseOperation<GenericTransaction>
         }
     }
 
-    private scriptToAddress(script: { codeHash: string; hashType: string; args: string }): string {
-        try {
-            const normalizedScript = new Script(
-                this.ensureHexPrefix(script.codeHash) as `0x${string}`,
-                script.hashType as 'type' | 'data' | 'data1' | 'data2',
-                this.ensureHexPrefix(script.args) as `0x${string}`
-            );
-
-            const addressType = this.configManager.networkType === 'mainnet' 
-                ? AddressType.MAINNET 
-                : AddressType.TESTNET;
-
-            return Address.encode(normalizedScript, addressType, false);
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new Error(`Failed to generate address from script ${JSON.stringify(script)}: ${errorMessage}`);
-        }
-    }
-
     private normalizeScript(script: any): { codeHash: string; hashType: string; args: string } {
         if (!script) {
             throw new Error('Script cannot be null or undefined');
@@ -165,18 +146,14 @@ export class GenericDatabaseOps implements DatabaseOperation<GenericTransaction>
         return normalized;
     }
 
-    private computeLockHash(script: { codeHash: string; hashType: string; args: string }): string {
+    private computeScriptHash(script: CKBScript): string {
         try {
-            const codeHash = this.ensureHexPrefix(script.codeHash);
-            const args = this.ensureHexPrefix(script.args);
-            
-            const ckbScript = new Script(
-                codeHash as `0x${string}`,
-                script.hashType as 'type' | 'data' | 'data1' | 'data2',
-                args as `0x${string}`
+            const normalizedScript = new Script(
+                script.code_hash as `0x${string}`,
+                script.hash_type as 'type' | 'data' | 'data1' | 'data2',
+                script.args as `0x${string}`
             );
-
-            return ckbScript.hash();
+            return normalizedScript.hash();
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             throw new Error(`Failed to compute script hash for script ${JSON.stringify(script)}: ${errorMessage}`);

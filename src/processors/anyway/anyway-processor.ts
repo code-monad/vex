@@ -13,5 +13,7 @@ export class AnywayProcessor extends BaseProcessor {
 
   protected async processTransaction(tx: Transaction): Promise<void> {
     this.logger.info(`Processing transaction: ${tx.hash}`);
+    await this.dbOps.save(tx);
+    this.logger.debug(`Saved transaction ${tx.hash} to database`);
   }
 }
