@@ -7,6 +7,7 @@ import { FilterRegistry } from './filters/registry';
 import { ProcessorRegistry } from './processors/registry';
 import { Transaction } from './types/transaction';
 import { DatabaseService } from './services/database';
+import { Container } from './core/container';
 
 export class App {
   private mqtt: MqttClient;
@@ -14,27 +15,58 @@ export class App {
   private filterRegistry: FilterRegistry;
   private processorRegistry: ProcessorRegistry;
   private database: DatabaseService;
+  private config: ConfigManager;
+  private logger: Logger;
+  private errorHandler: ErrorHandler;
+  private transactionQueue: Transaction[] = [];
+  private isProcessing = false;
 
   constructor(
-    private config: ConfigManager,
-    private logger: Logger,
-    private errorHandler: ErrorHandler
+    private container: Container,
   ) {
-    this.database = new DatabaseService(config.mongodbConfig, logger, errorHandler);
-    this.pipeline = new Pipeline(errorHandler, logger);
-    this.mqtt = new MqttClient(config.mqttConfig, errorHandler, logger);
-    this.filterRegistry = new FilterRegistry(config, this.logger); // Pass ConfigManager to FilterRegistry
-    this.processorRegistry = new ProcessorRegistry(logger, config);
+    this.config = container.resolve<ConfigManager>('ConfigManager');
+    this.logger = container.resolve<Logger>('Logger');
+    this.errorHandler = container.resolve<ErrorHandler>('ErrorHandler');
+    this.database = container.resolve<DatabaseService>('DatabaseService');
+    
+    this.pipeline = new Pipeline(this.errorHandler, this.logger);
+    this.mqtt = new MqttClient(this.config.mqttConfig, this.errorHandler, this.logger);
+    this.filterRegistry = new FilterRegistry(this.config, this.logger);
+    this.processorRegistry = new ProcessorRegistry(this.logger, this.config);
 
     this.setupEventHandlers();
     this.registerFiltersAndProcessors();
   }
 
   private setupEventHandlers(): void {
-    this.mqtt.on('transaction', async (tx: Transaction) => {
+    this.mqtt.on('transaction', (tx: Transaction) => {
       this.logger.debug(`Received transaction for processing: ${tx.hash}`);
-      await this.pipeline.process(tx);
+      this.transactionQueue.push(tx);
+      this.processQueue();
     });
+  }
+
+  private async processQueue(): Promise<void> {
+    if (this.isProcessing) {
+      return;
+    }
+    this.isProcessing = true;
+
+    while (this.transactionQueue.length > 0) {
+      const tx = this.transactionQueue.shift();
+      if (tx) {
+        try {
+          await this.pipeline.process(tx);
+        } catch (error) {
+          this.errorHandler.handle(
+            error instanceof Error ? error : new Error(String(error)),
+            `Failed to process transaction: ${tx.hash}`
+          );
+        }
+      }
+    }
+
+    this.isProcessing = false;
   }
 
   private registerFiltersAndProcessors(): void {
