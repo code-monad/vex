@@ -1,6 +1,8 @@
+export type HashType = 'type' | 'data' | 'data1' | 'data2';
+
 export interface Script {
     code_hash: string;
-    hash_type: string;
+    hash_type: HashType;
     args: string;
 }
 
@@ -8,6 +10,7 @@ export interface Cell {
     capacity: string;
     lock: Script;
     type?: Script | null;
+    data: string;
 }
 
 export interface CellDep {
@@ -28,13 +31,7 @@ export interface Input extends Cell {
 
 export interface Transaction {
     hash: string;
-    cell_deps: {
-        dep_type: string;
-        out_point: {
-            index: string;
-            tx_hash: string;
-        };
-    }[];
+    cell_deps: CellDep[];
     header_deps: string[];
     inputs: {
         previous_output: {
@@ -54,4 +51,5 @@ export interface Transaction {
     outputs_data: string[];
     version: string;
     witnesses: string[];
+    timestamp: string;
 }

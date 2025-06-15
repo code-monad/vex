@@ -1,14 +1,12 @@
 import { App } from './app';
-import { ConfigManager } from './config/config-manager';
-import { Logger } from './utils/logger';
+import { initializeContainer } from './core/container';
 import { ErrorHandler } from './utils/error';
 
 async function main() {
-  const logger = new Logger();
-  const errorHandler = new ErrorHandler(logger);
-  const configManager = new ConfigManager('./config/default.yml');
+  const container = initializeContainer('./config/default.yml');
+  const errorHandler = container.resolve<ErrorHandler>('ErrorHandler');
 
-  const app = new App(configManager, logger, errorHandler);
+  const app = new App(container);
 
   process.on('SIGINT', async () => {
     await app.stop();
@@ -33,4 +31,7 @@ async function main() {
   }
 }
 
-main();
+main().catch(error => {
+  console.error('Unhandled error in main:', error);
+  process.exit(1);
+});
